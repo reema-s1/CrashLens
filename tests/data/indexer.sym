@@ -1,0 +1,13 @@
+# nm -nSl --defined-only indexer
+                 U memcpy
+                 w __gmon_start__
+0000000000401000 0000000000000040 T _start
+0000000000401040 0000000000000120 T segment_load	/src/indexer/segment.c:40
+0000000000401160 t decode_frame.isra.0	/src/indexer/codec.c:190
+0000000000401300 T parse_header	/src/indexer/codec.c:101
+0000000000401300 A parse_header_alias
+0000000000401400 W worker_main(Worker&, int)	/src/indexer/worker.cc:70
+0000000000401480 000000000000000c t tiny_helper
+0000000000404000 0000000000000100 D segment_table
+0000000000404100 B _end
+this line is not nm output

@@ -12,6 +12,7 @@
 #include "crashlens/fingerprint.h"
 #include "crashlens/parser.h"
 #include "crashlens/report.h"
+#include "crashlens/symbols.h"
 #include "fs.h"
 #include "util.h"
 
@@ -29,11 +30,17 @@ typedef struct {
     int                 recursive;
     int                 verbose;
     const char         *output;
+    const char        **symbol_files;   /* room for argc entries */
+    int                 nsymbol_files;
+    uint64_t            load_bias;
 } options_t;
 
 typedef struct {
     cl_cluster_table_t    *clusters;
     const cl_fp_options_t *fp;
+    const cl_symtab_t     *symtab;      /* NULL when no maps were given */
+    uint64_t               load_bias;
+    uint64_t               symbolicated;
     int                    out_of_memory;
 } pipeline_t;
 
@@ -49,6 +56,9 @@ static const char usage_text[] =
     "  -n, --frames N       frames used for fingerprinting (default 5, 0 = all)\n"
     "      --keep-noise     keep crash-handler frames (abort, raise, ...) in\n"
     "                       the fingerprint\n"
+    "  -s, --symbols FILE   resolve bare addresses with an nm-style symbol map\n"
+    "                       (nm -nSl output); may be repeated\n"
+    "      --load-bias ADDR subtract ADDR (hex) from addresses before lookup\n"
     "  -j, --json           write the report as JSON\n"
     "  -t, --top K          only report the K largest clusters\n"
     "  -d, --depth N        frames shown per example trace (default 12, 0 = all)\n"
@@ -62,7 +72,8 @@ static const char usage_text[] =
 
 typedef enum {
     OPT_HELP, OPT_VERSION, OPT_FORMAT, OPT_FRAMES, OPT_KEEP_NOISE, OPT_JSON,
-    OPT_TOP, OPT_DEPTH, OPT_RECURSIVE, OPT_OUTPUT, OPT_VERBOSE
+    OPT_TOP, OPT_DEPTH, OPT_RECURSIVE, OPT_OUTPUT, OPT_VERBOSE, OPT_SYMBOLS,
+    OPT_LOAD_BIAS
 } opt_id_t;
 
 static const struct {
@@ -82,12 +93,16 @@ static const struct {
     { OPT_RECURSIVE,  "-r", "--recursive",  0 },
     { OPT_OUTPUT,     "-o", "--output",     1 },
     { OPT_VERBOSE,    "-v", "--verbose",    0 },
+    { OPT_SYMBOLS,    "-s", "--symbols",    1 },
+    { OPT_LOAD_BIAS,  NULL, "--load-bias",  1 },
 };
 
 static int on_event(cl_crash_event_t *ev, void *ctx)
 {
     pipeline_t *pl = ctx;
 
+    if (pl->symtab)
+        pl->symbolicated += cl_symbolicate(pl->symtab, ev, pl->load_bias);
     if (cl_cluster_table_add(pl->clusters, ev, cl_fingerprint(ev, pl->fp)) != 0) {
         pl->out_of_memory = 1;
         return 1;
@@ -142,6 +157,11 @@ static int apply_option(opt_id_t id, const char *value, options_t *o)
     case OPT_VERBOSE:
         o->verbose = 1;
         return 0;
+    case OPT_SYMBOLS:
+        o->symbol_files[o->nsymbol_files++] = value;
+        return 0;
+    case OPT_LOAD_BIAS:
+        return cl_parse_u64(&value, 16, &o->load_bias) == 0 && *value == '\0' ? 0 : -1;
     }
     return -1;
 }
@@ -309,39 +329,84 @@ static int write_report(const options_t *o, const cl_cluster_table_t *clusters)
     return rc;
 }
 
+/* A missing or unreadable map is fatal: the report would silently differ
+ * from what was asked for. */
+static int load_symbols(const options_t *o, cl_symtab_t **out)
+{
+    cl_symtab_t *t;
+    int i;
+
+    *out = NULL;
+    if (o->nsymbol_files == 0)
+        return 0;
+    t = cl_symtab_create();
+    if (!t)
+        return -1;
+    for (i = 0; i < o->nsymbol_files; i++) {
+        size_t bad_before = cl_symtab_bad_lines(t);
+
+        errno = 0;
+        if (cl_symtab_load_file(t, o->symbol_files[i]) != 0) {
+            fprintf(stderr, "crashlens: %s: cannot load symbols: %s\n",
+                    o->symbol_files[i], errno ? strerror(errno) : "read error");
+            cl_symtab_destroy(t);
+            return -1;
+        }
+        if (o->verbose && cl_symtab_bad_lines(t) > bad_before) {
+            size_t bad = cl_symtab_bad_lines(t) - bad_before;
+
+            fprintf(stderr, "crashlens: %s: %u line%s not understood\n",
+                    o->symbol_files[i], (unsigned)bad, bad == 1 ? "" : "s");
+        }
+    }
+    if (o->verbose)
+        fprintf(stderr, "crashlens: %u symbols loaded\n", (unsigned)cl_symtab_count(t));
+    *out = t;
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     options_t o;
     pipeline_t pl;
     cl_pathlist_t inputs = { NULL, 0, 0 };
     cl_parser_t *parser = NULL;
+    cl_symtab_t *symtab = NULL;
     char **paths;
     size_t missing = 0, unreadable = 0;
     int npaths = 0;
     int status = EXIT_OK;
 
     memset(&o, 0, sizeof(o));
+    memset(&pl, 0, sizeof(pl));
     o.format = CL_FORMAT_AUTO;
     cl_report_options_default(&o.report);
 
     paths = malloc((size_t)argc * sizeof(*paths));
-    if (!paths) {
+    o.symbol_files = malloc((size_t)argc * sizeof(*o.symbol_files));
+    if (!paths || !o.symbol_files) {
         fputs("crashlens: out of memory\n", stderr);
-        return EXIT_INTERNAL;
+        status = EXIT_INTERNAL;
+        goto done;
     }
     if (parse_args(argc, argv, &o, paths, &npaths) != 0) {
         fputs("try 'crashlens --help'\n", stderr);
-        free(paths);
-        return EXIT_USAGE;
+        status = EXIT_USAGE;
+        goto done;
     }
     if (npaths == 0) {
         fputs(usage_text, stderr);
-        free(paths);
-        return EXIT_USAGE;
+        status = EXIT_USAGE;
+        goto done;
+    }
+    if (load_symbols(&o, &symtab) != 0) {
+        status = EXIT_INPUT;
+        goto done;
     }
 
-    memset(&pl, 0, sizeof(pl));
     pl.fp = &o.report.fp;
+    pl.symtab = symtab;
+    pl.load_bias = o.load_bias;
     pl.clusters = cl_cluster_table_create();
     parser = cl_parser_create(o.format, on_event, &pl);
     if (!pl.clusters || !parser ||
@@ -359,6 +424,10 @@ int main(int argc, char **argv)
         goto done;
     }
 
+    if (o.verbose && symtab)
+        fprintf(stderr, "crashlens: %llu frames symbolicated\n",
+                (unsigned long long)pl.symbolicated);
+
     o.report.stats = cl_parser_stats(parser);
     o.report.inputs = inputs.count + missing;
     o.report.unreadable = unreadable;
@@ -370,7 +439,9 @@ int main(int argc, char **argv)
 done:
     cl_pathlist_free(&inputs);
     free(paths);
+    free(o.symbol_files);
     cl_parser_destroy(parser);
     cl_cluster_table_destroy(pl.clusters);
+    cl_symtab_destroy(symtab);
     return status;
 }
