@@ -4,7 +4,7 @@
 /* A deliberately small test harness: each test is a void function, checks
  * record failures and keep going so one run reports every broken check. */
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -38,8 +38,9 @@ extern int test_failures;
     do {                                                                     \
         uint64_t a_ = (uint64_t)(actual), e_ = (uint64_t)(expected);         \
         if (a_ != e_) {                                                      \
-            fprintf(stderr, "  %s:%d: %s == 0x%" PRIx64 ", expected 0x%"     \
-                    PRIx64 "\n", __FILE__, __LINE__, #actual, a_, e_);       \
+            fprintf(stderr, "  %s:%d: %s == 0x%llx, expected 0x%llx\n",      \
+                    __FILE__, __LINE__, #actual, (unsigned long long)a_,     \
+                    (unsigned long long)e_);                                 \
             test_failures++;                                                 \
         }                                                                    \
     } while (0)

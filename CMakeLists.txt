@@ -27,6 +27,14 @@ else()
     endif()
 endif()
 
+if(MINGW)
+    # C99-conforming printf, so PRIx64 and friends need no MS extensions.
+    add_compile_definitions(__USE_MINGW_ANSI_STDIO=1)
+    # Older MinGW headers leave GCC checking formats against the MS runtime
+    # and flag valid %lld/%llx; the other toolchains still check formats.
+    add_compile_options(-Wno-format)
+endif()
+
 if(CRASHLENS_SANITIZE)
     if(MSVC)
         add_compile_options(/fsanitize=address)
