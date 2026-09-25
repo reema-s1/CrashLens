@@ -206,6 +206,8 @@ static void finalize(cl_symtab_t *t)
     uint64_t next_start = UINT64_MAX;
     size_t i;
 
+    if (t->count == 0)
+        return; /* t->syms may be NULL, which qsort does not accept */
     qsort(t->syms, t->count, sizeof(*t->syms), symbol_cmp);
     for (i = t->count; i-- > 0;) {
         cl_symbol_t *s = &t->syms[i];
