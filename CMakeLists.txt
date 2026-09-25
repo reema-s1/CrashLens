@@ -47,6 +47,7 @@ endif()
 
 add_library(crashlens_core STATIC
     src/crash_event.c
+    src/fingerprint.c
     src/parser.c
     src/parser_native.c
     src/util.c

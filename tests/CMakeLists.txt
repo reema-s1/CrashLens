@@ -1,4 +1,5 @@
 add_executable(crashlens_tests
+    test_fingerprint.c
     test_main.c
     test_parser.c
     test_util.c
