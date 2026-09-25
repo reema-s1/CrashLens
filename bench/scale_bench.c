@@ -85,6 +85,10 @@ typedef struct {
     size_t cap;
 } buffer_t;
 
+#if defined(__GNUC__)
+static void append(buffer_t *b, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
+
 static void append(buffer_t *b, const char *fmt, ...)
 {
     va_list ap;
@@ -327,13 +331,12 @@ static void write_sanitizer(buffer_t *b, const bug_t *bug)
 static void write_log_noise(buffer_t *b)
 {
     static const char *const msgs[] = {
-        "INFO request served in %u ms", "DEBUG cache hit ratio %u%%",
-        "WARN retrying segment %u", "INFO compaction freed %u pages",
+        "INFO request served, ms=", "DEBUG cache hit ratio, percent=",
+        "WARN retrying segment", "INFO compaction freed pages, count=",
     };
+    const char *msg = msgs[below(4)];
 
-    append(b, "2026-09-01T12:00:00Z ");
-    append(b, msgs[below(4)], below(1000));
-    append(b, "\n");
+    append(b, "2026-09-01T12:00:00Z %s %u\n", msg, below(1000));
 }
 
 /* ---- evaluation ----------------------------------------------------- */

@@ -147,6 +147,8 @@ static int parse_line(cl_symtab_t *t, const char *s, const char *end)
 
     /* The name runs to a tab (nm -l location) or the end of the line; it
      * may contain spaces when demangled. */
+    if (name >= end)
+        return 1;
     tab = memchr(name, '\t', (size_t)(end - name));
     name_end = tab ? tab : end;
     while (name_end > name && cl_isspace((unsigned char)name_end[-1]))

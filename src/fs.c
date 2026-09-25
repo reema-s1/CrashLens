@@ -16,6 +16,10 @@
 
 #include "util.h"
 
+#ifndef S_ISDIR
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR) /* missing from MSVC */
+#endif
+
 #define MAX_DEPTH 64
 
 typedef struct {

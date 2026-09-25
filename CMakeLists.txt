@@ -17,7 +17,9 @@ option(CRASHLENS_LIBFUZZER "Also build libFuzzer binaries (Clang only)" OFF)
 
 if(MSVC)
     add_compile_options(/W4)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    # Keep POSIX names (stat, S_IFMT) available in standard C mode.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE
+                            _CRT_DECLARE_NONSTDC_NAMES=1)
     if(CRASHLENS_WERROR)
         add_compile_options(/WX)
     endif()
