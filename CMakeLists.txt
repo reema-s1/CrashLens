@@ -49,6 +49,7 @@ add_library(crashlens_core STATIC
     src/cluster.c
     src/crash_event.c
     src/fingerprint.c
+    src/fs.c
     src/parser.c
     src/parser_native.c
     src/report.c
@@ -57,6 +58,9 @@ add_library(crashlens_core STATIC
 target_include_directories(crashlens_core
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(crashlens src/main.c)
+target_link_libraries(crashlens PRIVATE crashlens_core)
 
 if(CRASHLENS_BUILD_TESTS)
     enable_testing()
