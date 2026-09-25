@@ -71,9 +71,15 @@ target_include_directories(crashlens_core
 add_executable(crashlens src/main.c)
 target_link_libraries(crashlens PRIVATE crashlens_core)
 
+add_executable(scale_bench bench/scale_bench.c)
+target_link_libraries(scale_bench PRIVATE crashlens_core)
+
 if(CRASHLENS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    # Clustering accuracy as a regression test, on a small synthetic set.
+    add_test(NAME scale_accuracy
+             COMMAND scale_bench --events 5000 --bugs 30 --repeat 1 --check)
 endif()
 
 if(CRASHLENS_BUILD_FUZZ OR CRASHLENS_LIBFUZZER)
