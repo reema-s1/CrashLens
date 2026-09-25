@@ -9,6 +9,7 @@ extern const test_case_t cluster_tests[];
 extern const test_case_t fingerprint_tests[];
 extern const test_case_t parser_tests[];
 extern const test_case_t report_tests[];
+extern const test_case_t sanitizer_tests[];
 extern const test_case_t symbols_tests[];
 extern const test_case_t util_tests[];
 
@@ -18,6 +19,7 @@ static const struct {
 } suites[] = {
     { "util", util_tests },
     { "parser", parser_tests },
+    { "sanitizer", sanitizer_tests },
     { "fingerprint", fingerprint_tests },
     { "cluster", cluster_tests },
     { "report", report_tests },

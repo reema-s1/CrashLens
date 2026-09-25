@@ -4,6 +4,7 @@ add_executable(crashlens_tests
     test_main.c
     test_parser.c
     test_report.c
+    test_sanitizer.c
     test_symbols.c
     test_util.c
 )

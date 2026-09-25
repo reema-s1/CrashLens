@@ -52,6 +52,7 @@ add_library(crashlens_core STATIC
     src/fs.c
     src/parser.c
     src/parser_native.c
+    src/parser_sanitizer.c
     src/report.c
     src/symbols.c
     src/util.c

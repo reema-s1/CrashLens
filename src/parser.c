@@ -17,6 +17,7 @@
 
 static const cl_adapter_t *const adapters[] = {
     &cl_native_adapter,
+    &cl_sanitizer_adapter,
 };
 
 typedef enum { ENC_UNKNOWN, ENC_UTF8, ENC_UTF16LE, ENC_UTF16BE } encoding_t;

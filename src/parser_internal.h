@@ -33,6 +33,7 @@ typedef struct {
 } cl_adapter_t;
 
 extern const cl_adapter_t cl_native_adapter;
+extern const cl_adapter_t cl_sanitizer_adapter;
 
 /* Shared by adapters: parses "file:line" at the end of [s, end). On success
  * stores the file and line and returns 0. */

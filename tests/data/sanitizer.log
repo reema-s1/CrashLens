@@ -1,0 +1,54 @@
+[ RUN      ] SegmentTest.ReloadAfterCompaction
+=================================================================
+==4121==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000010 at pc 0x55d0c4 bp 0x7ffc sp 0x7ff0
+READ of size 4 at 0x602000000010 thread T3
+    #0 0x55555555d0c4 in parse_header /src/indexer/codec.c:118:5
+    #1 0x55555555d1f0 in decode_frame.isra.0 /src/indexer/codec.c:201
+    #2 0x55555555e000 in Segment::load(std::string const&) /src/indexer/segment.cc:40:12
+    #3 0x7f3a1c229d8f in start_thread (/lib/x86_64-linux-gnu/libc.so.6+0x94ac3) (BuildId: 490fef8403240c91833978d494d39e537409b92e)
+
+0x602000000010 is located 0 bytes inside of 4-byte region [0x602000000010,0x602000000014)
+freed by thread T3 here:
+    #0 0x7f3a1c4b8537 in __interceptor_free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x55555555d300 in segment_compact /src/indexer/segment.cc:90
+
+previously allocated by thread T3 here:
+    #0 0x7f3a1c4b8887 in __interceptor_malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:145
+
+SUMMARY: AddressSanitizer: heap-use-after-free /src/indexer/codec.c:118:5 in parse_header
+==4121==ABORTING
+[ RUN      ] SegmentTest.ReloadTwice
+==5007==ERROR: AddressSanitizer: heap-use-after-free on address 0x603000000040 at pc 0x5612c4 bp 0x7ffd sp 0x7ff1
+READ of size 4 at 0x603000000040 thread T1
+    #0 0x5612aa05d0c4 in parse_header /src/indexer/codec.c:118:5
+    #1 0x5612aa05d1f0 in decode_frame /src/indexer/codec.c:201
+    #2 0x5612aa05e000 in Segment::load(std::string const&) /src/indexer/segment.cc:40:12
+    #3 0x7f00aa029d8f in start_thread (/lib/x86_64-linux-gnu/libc.so.6+0x94ac3)
+SUMMARY: AddressSanitizer: heap-use-after-free /src/indexer/codec.c:118:5 in parse_header
+==5007==ABORTING
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==6100==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x55555555a010 bp 0x7ffc sp 0x7ff0 T0)
+==6100==The signal is caused by a READ memory access.
+==6100==Hint: address points to the zero page.
+    #0 0x55555555a010 in (anonymous namespace)::lookup(Index const&, int) /src/indexer/index.cc:12
+    #1 0x55555555a200 in main /src/indexer/main.cc:30
+    #2 0x7f3a1c229d8f  (<unknown module>)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /src/indexer/index.cc:12 in lookup
+==6100==ABORTING
+==6200==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 64 byte(s) in 1 object(s) allocated from:
+    #0 0x7f3a1c4b8887 in __interceptor_malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:145
+    #1 0x55555555b000 in make_buffer /src/indexer/buffer.c:9
+=== CRASH ===
+Signal: SIGABRT
+Backtrace:
+  #0 0x1 raise
+  #1 0x2 abort
+  #2 0x3 check_invariants
+=== END ===
+==6300==ERROR: AddressSanitizer: stack-overflow on address 0x7ffe
+    #0 0x55555555c000 in recurse /src/indexer/tree.c:5
