@@ -12,6 +12,9 @@ extern "C" {
 
 #define CL_FP_DEFAULT_TOP_N 5
 
+/* Large enough for any token cl_frame_token() produces. */
+#define CL_TOKEN_MAX (CL_SYMBOL_MAX + CL_FILE_MAX + 24)
+
 typedef struct {
     /* Number of frames that contribute to the fingerprint; <= 0 uses the
      * whole stack. */
@@ -42,9 +45,9 @@ size_t cl_fingerprint_signature(const cl_crash_event_t *ev,
  * frame with a module-relative offset, or "??". Returns the length. */
 size_t cl_frame_token(const cl_frame_t *f, char *buf, size_t size);
 
-/* Index of the first frame that contributes to the fingerprint. */
-size_t cl_fingerprint_first_frame(const cl_crash_event_t *ev,
-                                  const cl_fp_options_t *opts);
+/* The frames [*first, *end) that contribute to the fingerprint. */
+void cl_fingerprint_range(const cl_crash_event_t *ev, const cl_fp_options_t *opts,
+                          size_t *first, size_t *end);
 
 uint64_t cl_fnv1a64(const void *data, size_t len, uint64_t hash);
 #define CL_FNV1A64_INIT 0xcbf29ce484222325ull

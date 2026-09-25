@@ -97,10 +97,9 @@ static int is_noise(const char *token)
     return 0;
 }
 
-size_t cl_fingerprint_first_frame(const cl_crash_event_t *ev,
-                                  const cl_fp_options_t *opts)
+static size_t first_frame(const cl_crash_event_t *ev, const cl_fp_options_t *opts)
 {
-    char token[CL_SYMBOL_MAX];
+    char token[CL_TOKEN_MAX];
     size_t i;
 
     if (!opts->skip_noise)
@@ -114,22 +113,24 @@ size_t cl_fingerprint_first_frame(const cl_crash_event_t *ev,
     return 0;
 }
 
-static size_t frame_end(const cl_crash_event_t *ev, const cl_fp_options_t *opts,
-                        size_t first)
+void cl_fingerprint_range(const cl_crash_event_t *ev, const cl_fp_options_t *opts,
+                          size_t *first, size_t *end)
 {
-    if (opts->top_n <= 0 || ev->frame_count - first <= (size_t)opts->top_n)
-        return ev->frame_count;
-    return first + (size_t)opts->top_n;
+    *first = first_frame(ev, opts);
+    if (opts->top_n <= 0 || ev->frame_count - *first <= (size_t)opts->top_n)
+        *end = ev->frame_count;
+    else
+        *end = *first + (size_t)opts->top_n;
 }
 
 uint64_t cl_fingerprint(const cl_crash_event_t *ev, const cl_fp_options_t *opts)
 {
-    char token[CL_SYMBOL_MAX + CL_FILE_MAX];
-    size_t first = cl_fingerprint_first_frame(ev, opts);
-    size_t end = frame_end(ev, opts, first);
+    char token[CL_TOKEN_MAX];
+    size_t first, end;
     uint64_t hash = CL_FNV1A64_INIT;
     size_t i, len;
 
+    cl_fingerprint_range(ev, opts, &first, &end);
     for (i = first; i < end; i++) {
         if (i > first)
             hash = cl_fnv1a64("|", 1, hash);
@@ -143,12 +144,12 @@ size_t cl_fingerprint_signature(const cl_crash_event_t *ev,
                                 const cl_fp_options_t *opts,
                                 char *buf, size_t size)
 {
-    char token[CL_SYMBOL_MAX + CL_FILE_MAX];
-    size_t first = cl_fingerprint_first_frame(ev, opts);
-    size_t end = frame_end(ev, opts, first);
+    char token[CL_TOKEN_MAX];
+    size_t first, end;
     size_t total = 0;
     size_t i, len;
 
+    cl_fingerprint_range(ev, opts, &first, &end);
     if (size > 0)
         buf[0] = '\0';
     for (i = first; i < end; i++) {

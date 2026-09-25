@@ -109,7 +109,13 @@ static void test_noise_frames_skipped(void)
     cl_fp_options_default(&o);
     CHECK_U64(cl_fingerprint(aborted, &o), cl_fingerprint(plain, &o));
     CHECK_U64(cl_fingerprint(asan, &o), cl_fingerprint(plain, &o));
-    CHECK_INT(cl_fingerprint_first_frame(aborted, &o), 4);
+    {
+        size_t first, end;
+
+        cl_fingerprint_range(aborted, &o, &first, &end);
+        CHECK_INT(first, 4);
+        CHECK_INT(end, 7);
+    }
 
     cl_fingerprint_signature(only_noise, &o, sig, sizeof(sig));
     CHECK_STR(sig, "raise|abort");
