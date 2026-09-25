@@ -89,11 +89,25 @@ typedef struct {
 static void append(buffer_t *b, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 #endif
 
+static void grow(buffer_t *b, size_t need)
+{
+    b->cap = b->cap * 2 + need + 4096;
+    b->data = realloc(b->data, b->cap);
+    if (!b->data) {
+        fputs("scale_bench: out of memory\n", stderr);
+        exit(2);
+    }
+}
+
 static void append(buffer_t *b, const char *fmt, ...)
 {
     va_list ap;
     int n;
 
+    /* Allocate before the first write: offsetting a null pointer, even
+     * by zero, is undefined. */
+    if (!b->data)
+        grow(b, 0);
     for (;;) {
         size_t room = b->cap - b->len;
 
@@ -108,12 +122,7 @@ static void append(buffer_t *b, const char *fmt, ...)
             b->len += (size_t)n;
             return;
         }
-        b->cap = b->cap * 2 + (size_t)n + 4096;
-        b->data = realloc(b->data, b->cap);
-        if (!b->data) {
-            fputs("scale_bench: out of memory\n", stderr);
-            exit(2);
-        }
+        grow(b, (size_t)n);
     }
 }
 
