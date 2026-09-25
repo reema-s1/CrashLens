@@ -46,6 +46,7 @@ if(CRASHLENS_SANITIZE)
 endif()
 
 add_library(crashlens_core STATIC
+    src/cluster.c
     src/crash_event.c
     src/fingerprint.c
     src/parser.c
