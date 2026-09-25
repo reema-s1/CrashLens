@@ -127,7 +127,7 @@ static int parse_frame(const char *s, unsigned long *index, cl_frame_t *f)
     uint64_t idx;
     int has_symbol = 0;
 
-    memset(f, 0, sizeof(*f));
+    cl_frame_init(f);
     s++;
     if (cl_parse_u64(&s, 10, &idx) != 0 || idx >= MAX_FRAME_INDEX ||
         !cl_isspace((unsigned char)*s))
@@ -191,15 +191,13 @@ static cl_step_t sanitizer_step(cl_crash_event_t *ev, int *state, const char *li
 {
     const char *s = cl_skip_space(line);
     unsigned long index;
-    cl_frame_t frame, *slot;
+    cl_frame_t scratch, *slot = cl_frame_slot(ev, &scratch);
 
     if (!IN_STACK(*state)) {
         if (*s == '#') {
-            if (parse_frame(s, &index, &frame) == 0 && index == 0) {
+            if (parse_frame(s, &index, slot) == 0 && index == 0) {
                 *state = STACK_STATE(0ul);
-                slot = cl_event_push_frame(ev);
-                if (slot)
-                    *slot = frame;
+                cl_frame_commit(ev, slot);
             }
             return CL_STEP_CONTINUE;
         }
@@ -213,14 +211,12 @@ static cl_step_t sanitizer_step(cl_crash_event_t *ev, int *state, const char *li
 
     if (*s != '#')
         return CL_STEP_DONE_REPLAY;
-    if (parse_frame(s, &index, &frame) != 0)
+    if (parse_frame(s, &index, slot) != 0)
         return CL_STEP_CONTINUE;
     if (index <= LAST_INDEX(*state))
         return CL_STEP_DONE; /* a second stack began without a gap */
     *state = STACK_STATE(index);
-    slot = cl_event_push_frame(ev);
-    if (slot)
-        *slot = frame;
+    cl_frame_commit(ev, slot);
     return CL_STEP_CONTINUE;
 }
 

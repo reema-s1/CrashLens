@@ -19,6 +19,16 @@ void cl_event_reset(cl_crash_event_t *ev)
     ev->frame_count = 0;
 }
 
+void cl_frame_init(cl_frame_t *f)
+{
+    f->address = 0;
+    f->offset = 0;
+    f->symbol[0] = '\0';
+    f->file[0] = '\0';
+    f->line = 0;
+    f->flags = 0;
+}
+
 cl_frame_t *cl_event_push_frame(cl_crash_event_t *ev)
 {
     cl_frame_t *f;
@@ -28,7 +38,7 @@ cl_frame_t *cl_event_push_frame(cl_crash_event_t *ev)
         return NULL;
     }
     f = &ev->frames[ev->frame_count++];
-    memset(f, 0, sizeof(*f));
+    cl_frame_init(f);
     return f;
 }
 

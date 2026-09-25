@@ -66,9 +66,13 @@ typedef struct {
  * cl_event_push_frame() initialises each frame as it is added. */
 void cl_event_reset(cl_crash_event_t *ev);
 
-/* Appends a zeroed frame. Returns NULL (and flags the event as
- * stack-truncated) when the stack is already full. */
+/* Appends an empty frame (see cl_frame_init). Returns NULL (and flags the
+ * event as stack-truncated) when the stack is already full. */
 cl_frame_t *cl_event_push_frame(cl_crash_event_t *ev);
+
+/* Empties a frame: no address, symbol, location or flags. Only the string
+ * terminators are written, not the whole buffers. */
+void cl_frame_init(cl_frame_t *f);
 
 const char *cl_format_name(cl_log_format_t fmt);
 int         cl_format_from_name(const char *name, cl_log_format_t *out);

@@ -139,7 +139,7 @@ static int parse_frame(const char *s, unsigned long *index, cl_frame_t *f)
     const char *rest, *end, *q;
     uint64_t idx;
 
-    memset(f, 0, sizeof(*f));
+    cl_frame_init(f);
     s++;
     if (cl_parse_u64(&s, 10, &idx) != 0 || idx >= MAX_FRAME_INDEX ||
         !cl_isspace((unsigned char)*s))
@@ -194,7 +194,7 @@ static cl_step_t native_step(cl_crash_event_t *ev, int *state, const char *line)
 {
     const char *s = cl_skip_space(line);
     unsigned long index;
-    cl_frame_t frame, *slot;
+    cl_frame_t scratch, *slot;
 
     if (strcmp(s, NATIVE_END) == 0)
         return CL_STEP_DONE;
@@ -217,12 +217,11 @@ static cl_step_t native_step(cl_crash_event_t *ev, int *state, const char *line)
             break;
         }
         /* Malformed or out-of-order frame lines are skipped. */
-        if (parse_frame(s, &index, &frame) != 0 || index < NEXT_INDEX(*state))
+        slot = cl_frame_slot(ev, &scratch);
+        if (parse_frame(s, &index, slot) != 0 || index < NEXT_INDEX(*state))
             break;
         *state = MAKE_STATE(PHASE_FRAMES, index + 1);
-        slot = cl_event_push_frame(ev);
-        if (slot)
-            *slot = frame;
+        cl_frame_commit(ev, slot);
         break;
 
     default:

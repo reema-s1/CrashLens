@@ -39,4 +39,21 @@ extern const cl_adapter_t cl_sanitizer_adapter;
  * stores the file and line and returns 0. */
 int cl_split_file_line(const char *s, const char *end, cl_frame_t *f);
 
+/* Frames are parsed straight into the event: cl_frame_slot() returns the
+ * next free frame, or `scratch` once the stack is full, and
+ * cl_frame_commit() keeps what was parsed into it. A line that fails to
+ * parse is simply never committed. */
+static inline cl_frame_t *cl_frame_slot(cl_crash_event_t *ev, cl_frame_t *scratch)
+{
+    return ev->frame_count < CL_MAX_STACK_DEPTH ? &ev->frames[ev->frame_count] : scratch;
+}
+
+static inline void cl_frame_commit(cl_crash_event_t *ev, const cl_frame_t *slot)
+{
+    if (ev->frame_count < CL_MAX_STACK_DEPTH && slot == &ev->frames[ev->frame_count])
+        ev->frame_count++;
+    else
+        ev->flags |= CL_EVENT_STACK_TRUNCATED;
+}
+
 #endif
