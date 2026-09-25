@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.cc }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_C_COMPILER=${{ matrix.cc }}
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCRASHLENS_WERROR=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Benchmark
+        run: ./build/scale_bench --events 50000 --bugs 40 --check
+
+  sanitizers:
+    name: ASan + UBSan
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCRASHLENS_SANITIZE=ON
+          -DCRASHLENS_WERROR=ON
+          -DCRASHLENS_FUZZ_ITERATIONS=200000
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Keep failing fuzz inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-crashes
+          path: build/**/crash-*
+          if-no-files-found: ignore
+
+  libfuzzer:
+    name: libFuzzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCRASHLENS_SANITIZE=ON
+          -DCRASHLENS_LIBFUZZER=ON
+          -DCRASHLENS_BUILD_TESTS=OFF
+      - name: Build
+        run: cmake --build build -j --target fuzz_parser_libfuzzer fuzz_symbols_libfuzzer
+      - name: Fuzz
+        run: |
+          mkdir -p corpus/parser corpus/symbols
+          cp tests/data/*.log corpus/parser/
+          cp tests/data/*.sym corpus/symbols/
+          ./build/fuzz/fuzz_parser_libfuzzer -max_total_time=120 -dict=fuzz/crashlens.dict corpus/parser
+          ./build/fuzz/fuzz_symbols_libfuzzer -max_total_time=60 corpus/symbols
+      - name: Keep failing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libfuzzer-crashes
+          path: |
+            crash-*
+            leak-*
+            timeout-*
+          if-no-files-found: ignore
+
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
