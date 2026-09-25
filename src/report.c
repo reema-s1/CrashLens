@@ -90,6 +90,11 @@ static void print_cluster(FILE *out, const cl_cluster_t *c, size_t rank,
     fprintf(out, "  (%u file%s", (unsigned)c->sources, c->sources == 1 ? "" : "s");
     if (c->truncated)
         fprintf(out, ", %llu truncated", (unsigned long long)c->truncated);
+    if (c->estimated_times == c->count)
+        fputs(", times from file modification", out);
+    else if (c->estimated_times)
+        fprintf(out, ", %llu timed from file modification",
+                (unsigned long long)c->estimated_times);
     fputs(")\n", out);
 
     cl_fingerprint_signature(ev, &opts->fp, sig, sizeof(sig));
@@ -284,8 +289,9 @@ static void json_cluster(FILE *out, const cl_cluster_t *c, size_t rank,
             (unsigned)rank, (unsigned long long)c->fingerprint);
     fprintf(out, "      \"count\": %llu,\n      \"share\": %.4f,\n",
             (unsigned long long)c->count, share(c->count, total) / 100.0);
-    fprintf(out, "      \"truncated\": %llu,\n      \"kind\": ",
-            (unsigned long long)c->truncated);
+    fprintf(out, "      \"truncated\": %llu,\n      \"estimated_times\": %llu,\n"
+                 "      \"kind\": ",
+            (unsigned long long)c->truncated, (unsigned long long)c->estimated_times);
     json_opt_string(out, ev->kind);
     fputs(",\n      \"signal\": ", out);
     if (ev->signal)

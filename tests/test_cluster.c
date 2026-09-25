@@ -33,9 +33,12 @@ static void test_counts_and_times(void)
 {
     cl_cluster_table_t *t = cl_cluster_table_create();
     const cl_cluster_t *c;
+    cl_crash_event_t *ev;
 
     CHECK_INT(cl_cluster_table_add(t, event("a.log", 300, "f", 0), 1), 0);
-    CHECK_INT(cl_cluster_table_add(t, event("a.log", 100, "f", 0), 1), 0);
+    ev = event("a.log", 100, "f", 0);
+    ev->flags |= CL_EVENT_TIME_ESTIMATED;
+    CHECK_INT(cl_cluster_table_add(t, ev, 1), 0);
     CHECK_INT(cl_cluster_table_add(t, event("b.log", 0, "f", 0), 1), 0);
     CHECK_INT(cl_cluster_table_add(t, event("b.log", 200, "g", 0), 2), 0);
 
@@ -49,6 +52,7 @@ static void test_counts_and_times(void)
         CHECK_INT(c->first_seen, 100);
         CHECK_INT(c->last_seen, 300);
         CHECK_INT(c->sources, 2);
+        CHECK_INT(c->estimated_times, 1);
     }
     CHECK(cl_cluster_table_find(t, 3) == NULL);
     cl_cluster_table_destroy(t);

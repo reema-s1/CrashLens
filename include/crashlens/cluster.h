@@ -15,6 +15,7 @@ typedef struct {
     uint64_t          fingerprint;
     uint64_t          count;
     uint64_t          truncated;      /* members that were incomplete */
+    uint64_t          estimated_times; /* members timed by file mtime */
     int64_t           first_seen;     /* 0 when no member had a timestamp */
     int64_t           last_seen;
     size_t            sources;        /* distinct input files */

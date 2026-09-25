@@ -138,6 +138,7 @@ int cl_cluster_table_add(cl_cluster_table_t *t, const cl_crash_event_t *ev,
         c->fingerprint = fingerprint;
         c->count = 0;
         c->truncated = 0;
+        c->estimated_times = 0;
         c->first_seen = 0;
         c->last_seen = 0;
         c->sources = 1;
@@ -161,6 +162,8 @@ int cl_cluster_table_add(cl_cluster_table_t *t, const cl_crash_event_t *ev,
     c->count++;
     if (ev->flags & CL_EVENT_TRUNCATED)
         c->truncated++;
+    if (ev->flags & CL_EVENT_TIME_ESTIMATED)
+        c->estimated_times++;
     if (ev->timestamp != 0) {
         if (c->first_seen == 0 || ev->timestamp < c->first_seen)
             c->first_seen = ev->timestamp;
