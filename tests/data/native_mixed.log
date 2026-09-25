@@ -1,0 +1,40 @@
+2026-09-25T14:00:00Z INFO indexer starting, 4 workers
+2026-09-25T14:00:01Z INFO opened /var/lib/indexer/segments
+=== CRASH ===
+Time: 2026-09-25T14:03:11Z
+Process: indexer [4121]
+Thread: worker-3
+Signal: SIGSEGV (11)
+Backtrace:
+  #0  0x00007f3a1c2b1c20 parse_header + 32 (codec.c:118)
+  #1  0x00007f3a1c2b0010 decode_frame + 0x90 (codec.c:201)
+  #2  0x00007f3a1c2a4400 segment_load + 12
+  #3  0x0000560d4e2a1f00 ??
+  #4  0x0000560d4e2a0100 worker_main + 64 (worker.c:77)
+=== END ===
+2026-09-25T14:03:12Z WARN supervisor: worker-3 exited, restarting
+=== CRASH ===
+Time: 2026-09-25T15:10:00+02:00
+Process: indexer [4388]
+Thread: worker-1
+Exception: std::out_of_range
+Signal: SIGABRT
+Backtrace:
+  #0  0x00007f11aa000010 std::vector<int, std::allocator<int> >::at(unsigned long) const + 8
+  #1  0x00007f11aa000900 Index::lookup(Key const&) (index.cc:42)
+=== END ===
+=== CRASH ===
+Time: not-a-timestamp
+Process: indexer
+Signal: SIGBUS
+Backtrace:
+this is not a frame
+=== END ===
+2026-09-25T16:00:00Z INFO shutting down
+=== CRASH ===
+Time: 2026-09-25T16:00:05Z
+PID: 99
+Signal: 7
+Backtrace:
+  #0  0x0000000000401000 mmap_reader_next
+  #1  0x0000000000401200 main + 5

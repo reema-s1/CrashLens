@@ -39,6 +39,8 @@ endif()
 
 add_library(crashlens_core STATIC
     src/crash_event.c
+    src/parser.c
+    src/parser_native.c
     src/util.c
 )
 target_include_directories(crashlens_core
