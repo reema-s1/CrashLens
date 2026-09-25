@@ -84,12 +84,18 @@ int cl_parse_u64(const char **sp, int base, uint64_t *out)
     int ndigits = 0;
     int d;
 
+    if (base != 10 && base != 16)
+        return -1;
     if (base == 16 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') &&
         cl_isxdigit((unsigned char)s[2]))
         s += 2;
 
+    /* Overflow checks without a division per digit: 64-bit division is a
+     * library call on 32-bit targets and dominated parsing time. */
     while ((d = digit_value((unsigned char)*s)) < base) {
-        if (value > (UINT64_MAX - (uint64_t)d) / (uint64_t)base)
+        if (base == 16 ? value >> 60 != 0
+                       : value > UINT64_MAX / 10 ||
+                         (value == UINT64_MAX / 10 && (uint64_t)d > UINT64_MAX % 10))
             return -1;
         value = value * (uint64_t)base + (uint64_t)d;
         s++;
