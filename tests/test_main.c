@@ -8,6 +8,7 @@ int test_failures;
 extern const test_case_t cluster_tests[];
 extern const test_case_t fingerprint_tests[];
 extern const test_case_t parser_tests[];
+extern const test_case_t report_tests[];
 extern const test_case_t util_tests[];
 
 static const struct {
@@ -18,6 +19,7 @@ static const struct {
     { "parser", parser_tests },
     { "fingerprint", fingerprint_tests },
     { "cluster", cluster_tests },
+    { "report", report_tests },
 };
 
 /* Usage: crashlens_tests [SUITE...]  -- runs every suite when none given. */

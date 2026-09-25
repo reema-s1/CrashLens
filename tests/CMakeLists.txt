@@ -3,6 +3,7 @@ add_executable(crashlens_tests
     test_fingerprint.c
     test_main.c
     test_parser.c
+    test_report.c
     test_util.c
 )
 target_link_libraries(crashlens_tests PRIVATE crashlens_core)

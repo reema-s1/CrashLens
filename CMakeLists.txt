@@ -51,6 +51,7 @@ add_library(crashlens_core STATIC
     src/fingerprint.c
     src/parser.c
     src/parser_native.c
+    src/report.c
     src/util.c
 )
 target_include_directories(crashlens_core
