@@ -225,8 +225,13 @@ static void finalize(cl_symtab_t *t)
 
 int cl_symtab_load_buffer(cl_symtab_t *t, const char *data, size_t len)
 {
-    const char *p = data, *end = data + len;
+    const char *p, *end;
     int rc = 0;
+
+    if (len == 0)
+        return 0; /* data may be NULL, and NULL + 0 is undefined */
+    p = data;
+    end = data + len;
 
     while (p < end) {
         const char *nl = memchr(p, '\n', (size_t)(end - p));
