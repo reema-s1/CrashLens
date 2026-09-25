@@ -12,6 +12,8 @@ endif()
 option(CRASHLENS_BUILD_TESTS "Build the unit test suite" ON)
 option(CRASHLENS_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(CRASHLENS_WERROR "Treat compiler warnings as errors" OFF)
+option(CRASHLENS_BUILD_FUZZ "Build the fuzz targets with the bundled driver" ON)
+option(CRASHLENS_LIBFUZZER "Also build libFuzzer binaries (Clang only)" OFF)
 
 if(MSVC)
     add_compile_options(/W4)
@@ -45,6 +47,11 @@ if(CRASHLENS_SANITIZE)
     endif()
 endif()
 
+if(CRASHLENS_LIBFUZZER)
+    # Coverage instrumentation for everything libFuzzer links against.
+    add_compile_options(-fsanitize=fuzzer-no-link)
+endif()
+
 add_library(crashlens_core STATIC
     src/cluster.c
     src/crash_event.c
@@ -67,4 +74,8 @@ target_link_libraries(crashlens PRIVATE crashlens_core)
 if(CRASHLENS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(CRASHLENS_BUILD_FUZZ OR CRASHLENS_LIBFUZZER)
+    add_subdirectory(fuzz)
 endif()
