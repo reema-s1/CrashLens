@@ -1,0 +1,17 @@
+/build*/
+/out/
+*.o
+*.obj
+*.exe
+*.a
+*.lib
+*.pdb
+*.ilk
+*.profraw
+crash-*
+leak-*
+timeout-*
+.vscode/
+.idea/
+.cache/
+compile_commands.json
